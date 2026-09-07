@@ -1,93 +1,76 @@
 import streamlit as st
-from database import register_user, login_user
-from ai import ask_ai
-from notes import generate_notes
-from quize import generate_quiz
+from auth import sign_up, sign_in, sign_out
 
 st.set_page_config(page_title="Smart Student AI", page_icon="🎓")
 
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
+if "user" not in st.session_state:
+    st.session_state.user = None
 
-if "username" not in st.session_state:
-    st.session_state.username = ""
-
-# ---------------- LOGIN ----------------
-if not st.session_state.logged_in:
+# ---------------- LOGIN / SIGN UP ----------------
+if st.session_state.user is None:
 
     st.title("🎓 Smart Student AI")
 
-    option = st.radio("Choose", ["Login", "Sign Up"])
+    choice = st.radio("Select", ["Login", "Sign Up"])
 
-    if option == "Login":
-        username = st.text_input("Username")
-        password = st.text_input("Password", type="password")
+    email = st.text_input("Email")
+    password = st.text_input("Password", type="password")
 
-        if st.button("Login"):
-            if login_user(username, password):
-                st.session_state.logged_in = True
-                st.session_state.username = username
-                st.success("Login Successful!")
-                st.rerun()
-            else:
-                st.error("Invalid username or password")
-
-    else:
-        username = st.text_input("Create Username")
-        password = st.text_input("Create Password", type="password")
-
+    if choice == "Sign Up":
         if st.button("Create Account"):
-            if register_user(username, password):
-                st.success("Account created successfully!")
-            else:
-                st.error("Username already exists")
+            try:
+                sign_up(email, password)
+                st.success("Account created successfully! Please log in.")
+            except Exception as e:
+                st.error(f"Error: {e}")
+
+    if choice == "Login":
+        if st.button("Login"):
+            try:
+                response = sign_in(email, password)
+                st.session_state.user = response.user
+                st.rerun()
+            except Exception:
+                st.error("Invalid email or password.")
 
 # ---------------- DASHBOARD ----------------
 else:
 
-    st.sidebar.title(f"Welcome {st.session_state.username}")
+    st.sidebar.success(f"Welcome {st.session_state.user.email}")
 
-    menu = st.sidebar.selectbox(
+    page = st.sidebar.selectbox(
         "Menu",
         [
-            "Home",
-            "Ask AI",
-            "Quiz",
-            "Notes",
-            "Logout"
+            "🏠 Home",
+            "🤖 Ask AI",
+            "📝 Quiz",
+            "📚 Notes",
+            "📊 Progress",
+            "🚪 Logout"
         ]
     )
 
-    if menu == "Home":
-        st.title("🎓 Smart Student AI")
-        st.write("Welcome to your dashboard!")
+    if page == "🏠 Home":
+        st.title("🏠 Home")
+        st.write("Welcome to Smart Student AI!")
 
-    elif menu == "Ask AI":
+    elif page == "🤖 Ask AI":
         st.title("🤖 Ask AI")
-        question = st.text_area("Ask any question")
+        st.info("AI integration will be added after your OpenAI API key is configured.")
 
-        if st.button("Get Answer"):
-            if question:
-                answer = ask_ai(question)
-                st.write(answer)
+    elif page == "📝 Quiz":
+        st.title("📝 Quiz")
+        st.write("Quiz feature coming next.")
 
-    elif menu == "Quiz":
-        st.title("📝 Quiz Generator")
-        topic = st.text_input("Quiz Topic")
+    elif page == "📚 Notes":
+        st.title("📚 Notes")
+        st.write("Notes feature coming next.")
 
-        if st.button("Generate Quiz"):
-            if topic:
-                st.write(generate_quiz(topic))
+    elif page == "📊 Progress":
+        st.title("📊 Progress")
+        st.progress(0.65)
 
-    elif menu == "Notes":
-        st.title("📚 Notes Generator")
-        topic = st.text_input("Notes Topic")
-
-        if st.button("Generate Notes"):
-            if topic:
-                st.write(generate_notes(topic))
-
-    elif menu == "Logout":
-        st.session_state.logged_in = False
-        st.session_state.username = ""
+    elif page == "🚪 Logout":
+        sign_out()
+        st.session_state.user = None
         st.rerun()
