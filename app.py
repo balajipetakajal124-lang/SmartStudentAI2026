@@ -1,26 +1,93 @@
 import streamlit as st
+from database import register_user, login_user
+from ai import ask_ai
+from notes import generate_notes
+from quize import generate_quiz
 
-st.title("🎓 Smart Student AI")
+st.set_page_config(page_title="Smart Student AI", page_icon="🎓")
 
-topic = st.text_input("Enter your study topic:")
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
 
-if st.button("Explain"):
-    if topic:
-        st.success(f"Topic: {topic}")
+if "username" not in st.session_state:
+    st.session_state.username = ""
 
-        if topic.lower() == "python":
-            st.write("Python is a programming language used for AI, web development, and automation.")
-        elif topic.lower() == "ai":
-            st.write("Artificial Intelligence helps computers learn and solve problems.")
-        elif topic.lower() == "machine learning":
-            st.write("Machine Learning is a branch of AI that learns from data.")
-        else:
-            st.write("This topic will be explained in future updates!")
+# ---------------- LOGIN ----------------
+if not st.session_state.logged_in:
 
-        st.subheader("📌 Study Tip")
-        st.write("Study for 25 minutes and take a 5-minute break.")
+    st.title("🎓 Smart Student AI")
 
-        st.subheader("📝 Quiz")
-        st.write("Q: What is AI?")
+    option = st.radio("Choose", ["Login", "Sign Up"])
+
+    if option == "Login":
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+
+        if st.button("Login"):
+            if login_user(username, password):
+                st.session_state.logged_in = True
+                st.session_state.username = username
+                st.success("Login Successful!")
+                st.rerun()
+            else:
+                st.error("Invalid username or password")
+
     else:
-        st.warning("Please enter a topic.")
+        username = st.text_input("Create Username")
+        password = st.text_input("Create Password", type="password")
+
+        if st.button("Create Account"):
+            if register_user(username, password):
+                st.success("Account created successfully!")
+            else:
+                st.error("Username already exists")
+
+# ---------------- DASHBOARD ----------------
+else:
+
+    st.sidebar.title(f"Welcome {st.session_state.username}")
+
+    menu = st.sidebar.selectbox(
+        "Menu",
+        [
+            "Home",
+            "Ask AI",
+            "Quiz",
+            "Notes",
+            "Logout"
+        ]
+    )
+
+    if menu == "Home":
+        st.title("🎓 Smart Student AI")
+        st.write("Welcome to your dashboard!")
+
+    elif menu == "Ask AI":
+        st.title("🤖 Ask AI")
+        question = st.text_area("Ask any question")
+
+        if st.button("Get Answer"):
+            if question:
+                answer = ask_ai(question)
+                st.write(answer)
+
+    elif menu == "Quiz":
+        st.title("📝 Quiz Generator")
+        topic = st.text_input("Quiz Topic")
+
+        if st.button("Generate Quiz"):
+            if topic:
+                st.write(generate_quiz(topic))
+
+    elif menu == "Notes":
+        st.title("📚 Notes Generator")
+        topic = st.text_input("Notes Topic")
+
+        if st.button("Generate Notes"):
+            if topic:
+                st.write(generate_notes(topic))
+
+    elif menu == "Logout":
+        st.session_state.logged_in = False
+        st.session_state.username = ""
+        st.rerun()
